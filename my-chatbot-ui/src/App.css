@@ -1,0 +1,27 @@
+/* Import a modern, clean font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+margin: 0;
+/* Use the modern 'Inter' font throughout the entire application */
+font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+sans-serif;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+
+/* BACKGROUND COLOR: A soft, cool blue-gray (#F0F4F8)
+This makes the white sidebar and chat container "pop" visually. */
+background-color: #F0F4F8;
+}
+
+.app-container {
+display: flex;
+height: 100vh;
+width: 100vw;
+overflow: hidden;
+
+/* Adds breathing room around the main app modules for a structured layout */
+padding: 20px;
+box-sizing: border-box;
+}

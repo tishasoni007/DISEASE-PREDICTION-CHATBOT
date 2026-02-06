@@ -1,0 +1,6 @@
+Typhoid is a bacterial infection caused by Salmonella typhi.
+It spreads through contaminated food and water.
+Common symptoms include prolonged fever, headache, fatigue,
+abdominal pain, diarrhea, and loss of appetite.
+Precautions include drinking clean water, maintaining hygiene,
+washing hands regularly, and consulting a doctor if symptoms persist.

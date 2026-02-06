@@ -1,0 +1,67 @@
+.history-sidebar {
+  width: 280px; /* Slightly wider for better spacing */
+  flex-shrink: 0;
+  padding: 24px;
+  background-color: #ffffff;
+  border-right: 1px solid #E5E7EB;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', sans-serif;
+  transition: width 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.02); /* Subtle shadow to match */
+}
+
+.history-sidebar h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #111827; /* Darker, more modern text color */
+  border-bottom: 1px solid #F3F4F6; /* Subtle separator */
+  padding-bottom: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-sidebar ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  overflow-y: auto; /* Allow scrolling if history is long */
+}
+
+/* Custom scrollbar for a cleaner look */
+.history-sidebar ul::-webkit-scrollbar {
+  width: 6px;
+}
+.history-sidebar ul::-webkit-scrollbar-thumb {
+  background-color: #D1D5DB;
+  border-radius: 3px;
+}
+.history-sidebar ul::-webkit-scrollbar-track {
+  background-color: #F9FAFB;
+}
+
+
+.history-sidebar li {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  border-radius: 8px;
+  color: #374151; /* Slightly softer text color */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+.history-sidebar li:hover {
+  background-color: #F3F4F6;
+  color: #111827;
+}
+

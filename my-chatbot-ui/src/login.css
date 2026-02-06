@@ -1,0 +1,83 @@
+body {
+  background: #f5f5f5;
+  font-family: Arial, sans-serif;
+}
+
+.login-container {
+  width: 350px;
+  background: white;
+  padding: 30px;
+  margin: 80px auto;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+}
+
+.login-container h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+}
+
+.login-form button {
+  width: 100%;
+  background: #d982ef;
+  color: white;
+  padding: 12px;
+  border: none;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.login-form button:hover {
+  background: #d982ef;
+}
+
+.google-login {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+  text-decoration: none;
+  color: black;
+}
+
+.google-btn img {
+  width: 20px;
+  margin-right: 10px;
+}
+
+.login-extra {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.login-extra a {
+  color: #d982ef;
+  text-decoration: none;
+}
+
+.login-extra a:hover {
+  text-decoration: underline;
+}
