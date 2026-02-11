@@ -49,6 +49,41 @@ index = faiss.IndexFlatL2(rag_embeddings.shape[1])
 index.add(rag_embeddings)
 
 # ===============================
+# Symptom Keywords (Fallback)
+# ===============================
+SYMPTOM_KEYWORDS = {
+    "fever": ["fever", "high temperature", "hot body"],
+    "headache": ["headache", "head pain"],
+    "muscle pain": ["muscle pain", "body pain", "body ache"],
+    "nausea": ["nausea", "vomiting", "feeling sick"],
+    "diarrhea": ["diarrhea", "loose motion", "loose motions"],
+    "cough": ["cough", "dry cough"]
+}
+
+def extract_symptoms_heuristic(text):
+    lowered = text.lower()
+    return {
+        symptom: int(any(k in lowered for k in keywords))
+        for symptom, keywords in SYMPTOM_KEYWORDS.items()
+    }
+
+# ===============================
+# Conversation State
+# ===============================
+user_state = {
+    "data": {},
+    "age": None,
+    "gender": None,
+    "expecting_more": False
+}
+
+def reset_session():
+    user_state["data"] = {}
+    user_state["age"] = None
+    user_state["gender"] = None
+    user_state["expecting_more"] = False
+
+# ===============================
 # NLP Extraction with Mistral
 # ===============================
 def extract_with_mistral(text):
@@ -136,12 +171,54 @@ def chat():
 
     # Greeting
     if text in ["hi", "hello", "hey", "hii"]:
+        reset_session()
         return jsonify({
             "reply": "Hello 👋 You can describe your symptoms in your own words."
         })
 
+    if user_state["expecting_more"] and text in ["no", "nope", "none", "no more", "that's all", "that is all"]:
+        if not user_state["data"]:
+            return jsonify({
+                "reply": "Please share at least one symptom so I can assess it."
+            })
+
+        age = user_state["age"] or 25
+        gender = 1 if user_state["gender"] == "male" else 0
+
+        data = {
+            "Age": age,
+            "Gender": gender,
+            "headache": user_state["data"].get("headache", 0),
+            "muscle pain": user_state["data"].get("muscle pain", 0),
+            "nausea": user_state["data"].get("nausea", 0),
+            "diarrhea": user_state["data"].get("diarrhea", 0),
+            "cough": user_state["data"].get("cough", 0),
+            "fever range (deg F)": 102 if user_state["data"].get("fever", 0) else 98.6,
+            "Hemoglobin (g/dL)": 13.5,
+            "Platelet Count": 250000,
+            "Urine Culture Bacteria": 0,
+            "Calcium (mg/dL)": 9.5,
+            "Potassium (mg/dL)": 4.0
+        }
+
+        X = scaler.transform([[data.get(col, 0) for col in feature_columns]])
+        prob = nb_model.predict_proba(X)[0][1]
+
+        if prob < 0.5:
+            reply = "Your symptoms do not strongly indicate typhoid. If symptoms persist, consult a doctor."
+        elif prob < 0.7:
+            reply = "I am not fully confident. Please consult a medical professional."
+        else:
+            reply = "There is a possibility of typhoid. Would you like to know precautions or more details?"
+
+        reset_session()
+        return jsonify({
+            "reply": reply,
+            "confidence": round(prob * 100, 2)
+        })
+
     # Knowledge / Info → RAG
-    if is_info_query(text):
+    if is_info_query(text) and not user_state["expecting_more"]:
         return jsonify({"reply": rag_explain(text)})
 
     # NLP Extraction
@@ -152,55 +229,33 @@ def chat():
             "reply": "I couldn’t understand clearly. Please describe your symptoms again."
         })
 
-    age = extracted.get("age") or 25
-    gender = 1 if extracted.get("gender") == "male" else 0
+    user_state["age"] = extracted.get("age") or user_state["age"]
+    user_state["gender"] = extracted.get("gender") or user_state["gender"]
 
-    symptom_count = sum([
-        extracted["fever"],
-        extracted["headache"],
-        extracted["muscle pain"],
-        extracted["nausea"],
-        extracted["diarrhea"],
-        extracted["cough"]
-    ])
+    heuristic = extract_symptoms_heuristic(text)
 
-    # Ask follow-up if not enough symptoms
-    if symptom_count < 2:
+    for key in ["fever", "headache", "muscle pain", "nausea", "diarrhea", "cough"]:
+        if extracted.get(key) == 1 or heuristic.get(key) == 1:
+            user_state["data"][key] = 1
+
+    remaining = [
+        "fever",
+        "headache",
+        "muscle pain",
+        "nausea",
+        "diarrhea",
+        "cough"
+    ]
+    remaining = [r for r in remaining if user_state["data"].get(r, 0) == 0]
+
+    user_state["expecting_more"] = True
+    if remaining:
         return jsonify({
-            "reply": "Thanks. Could you tell me if you also have headache, nausea, diarrhea, cough, or body pain?"
+            "reply": "Thanks. Do you have any of these symptoms: " + ", ".join(remaining) + "? If not, please say 'no'."
         })
 
-    # Prepare ML Input
-    data = {
-        "Age": age,
-        "Gender": gender,
-        "headache": extracted["headache"],
-        "muscle pain": extracted["muscle pain"],
-        "nausea": extracted["nausea"],
-        "diarrhea": extracted["diarrhea"],
-        "cough": extracted["cough"],
-        "fever range (deg F)": 102 if extracted["fever"] else 98.6,
-        "Hemoglobin (g/dL)": 13.5,
-        "Platelet Count": 250000,
-        "Urine Culture Bacteria": 0,
-        "Calcium (mg/dL)": 9.5,
-        "Potassium (mg/dL)": 4.0
-    }
-
-    X = scaler.transform([[data.get(col, 0) for col in feature_columns]])
-    prob = nb_model.predict_proba(X)[0][1]
-
-    # Decision
-    if prob < 0.5:
-        reply = "Your symptoms do not strongly indicate typhoid. If symptoms persist, consult a doctor."
-    elif prob < 0.7:
-        reply = "I am not fully confident. Please consult a medical professional."
-    else:
-        reply = "There is a possibility of typhoid. Would you like to know precautions or more details?"
-
     return jsonify({
-        "reply": reply,
-        "confidence": round(prob * 100, 2)
+        "reply": "Thanks. Do you have any other symptoms? If not, please say 'no'."
     })
 
 # ===============================
