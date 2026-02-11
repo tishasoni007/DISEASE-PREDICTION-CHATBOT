@@ -11,6 +11,9 @@ app.use(express.json());
 app.use("/login", require("./routes/login"));
 app.use("/register", require("./routes/register"));
 
+// admin routes
+app.use("/admin", require("./routes/admin"));
+
 // NEW: chat route (Node → Flask)
 app.use("/api/chat", require("./routes/chat"));
 

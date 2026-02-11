@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./login.css";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Register() {
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ function Register() {
         <button type="submit">Register</button>
 
         <p className="login-extra">
-          <a href="/login">Already have an account? Login</a>
+          <Link to="/login">Already have an account? Login</Link>
         </p>
       </form>
     </div>

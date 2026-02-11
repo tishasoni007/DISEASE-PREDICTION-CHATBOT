@@ -1,13 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const mysql = require("mysql2");
-
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "tis#1406",
-  database: "shopsphere_db",
-});
+const db = require("../db");
 
 router.post("/", (req, res) => {
   const { email, password } = req.body;
@@ -20,6 +13,9 @@ router.post("/", (req, res) => {
 
       if (results.length === 0)
         return res.json({ success: false, message: "User not found" });
+
+      if (results[0].is_active === 0)
+        return res.json({ success: false, message: "Account deactivated" });
 
       if (results[0].password !== password)
         return res.json({ success: false, message: "Wrong password" });

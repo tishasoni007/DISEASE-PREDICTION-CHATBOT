@@ -1,13 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const mysql = require("mysql2");
-
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "tis#1406",
-  database: "shopsphere_db",
-});
+const db = require("../db");
 
 router.post("/", (req, res) => {
   const { name, email, password } = req.body;
@@ -26,7 +19,7 @@ router.post("/", (req, res) => {
         return res.json({ success: false, message: "Email already exists" });
 
       db.query(
-        "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+        "INSERT INTO users (name, email, password, is_active) VALUES (?, ?, ?, 1)",
         [name, email, password],
         (err) => {
           if (err)

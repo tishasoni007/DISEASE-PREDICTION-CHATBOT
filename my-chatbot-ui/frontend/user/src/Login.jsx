@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "./login.css";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
   const navigate = useNavigate();
@@ -76,7 +76,7 @@ function Login() {
         </div>
 
         <p className="login-extra">
-          <a href="/register">New User? Register</a>
+          <Link to="/register">New User? Register</Link>
         </p>
       </form>
     </div>

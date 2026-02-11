@@ -8,8 +8,10 @@ import "./index.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
+const basename = process.env.REACT_APP_USER_BASENAME || "/";
+
 root.render(
-  <BrowserRouter>
+  <BrowserRouter basename={basename}>
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/login" element={<Login />} />

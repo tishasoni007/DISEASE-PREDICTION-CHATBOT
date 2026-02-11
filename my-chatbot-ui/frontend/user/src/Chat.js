@@ -27,13 +27,17 @@ function Chat({ messages, onNewMessage }) {
     setInput('');
 
     try {
+      const storedUser = localStorage.getItem("user");
+      const userEmail = storedUser ? JSON.parse(storedUser).email : null;
+
       const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          message: input   // 🔥 IMPORTANT: matches Flask chat logic
+          message: input,   // 🔥 IMPORTANT: matches Flask chat logic
+          userEmail
         })
       });
 
