@@ -1,10 +1,24 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import App from "./App";
 import Login from "./Login";
 import Register from "./Register";
 import "./index.css";
+
+/*
+  🔒 Protected Route Component
+  Prevents access to /chat and /doctors if user not logged in
+*/
+const ProtectedRoute = ({ children }) => {
+  const storedUser = localStorage.getItem("user");
+
+  if (!storedUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 
@@ -13,12 +27,25 @@ const basename = process.env.REACT_APP_USER_BASENAME || "/";
 root.render(
   <BrowserRouter basename={basename}>
     <Routes>
-      <Route path="/" element={<Login />} />
+      {/* Default Route */}
+      <Route path="/" element={<Navigate to="/login" />} />
+
+      {/* Auth Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Chatbot main app */}
-      <Route path="/chat" element={<App />} />
+      {/* Chatbot Main App (Protected) */}
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <App />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback Route */}
+      <Route path="*" element={<Navigate to="/login" />} />
     </Routes>
   </BrowserRouter>
 );

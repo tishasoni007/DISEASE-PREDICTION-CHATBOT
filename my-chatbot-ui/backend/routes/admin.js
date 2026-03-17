@@ -1,10 +1,13 @@
 const express = require("express");
+const bcrypt = require("bcrypt");
 const db = require("../db");
 
 const router = express.Router();
 
-
-router.post("/login", (req, res) => {
+/* =====================================
+   ADMIN LOGIN
+===================================== */
+router.post("/login", async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -12,23 +15,23 @@ router.post("/login", (req, res) => {
   }
 
   db.query(
-    "SELECT * FROM admin WHERE email = ?",
+    "SELECT * FROM admins WHERE email = ?",
     [email],
-    (err, results) => {
+    async (err, results) => {
       if (err) {
-        console.error("Admin login DB error:", err);
-        return res.json({
-          success: false,
-          message: "DB error",
-          error: err.code || err.message,
-        });
+        console.error("Admin login error:", err);
+        return res.json({ success: false, message: "Database error" });
       }
 
-      if (results.length === 0)
+      if (results.length === 0) {
         return res.json({ success: false, message: "Admin not found" });
+      }
 
-      if (results[0].password !== password)
+      const match = await bcrypt.compare(password, results[0].password);
+
+      if (!match) {
         return res.json({ success: false, message: "Wrong password" });
+      }
 
       res.json({
         success: true,
@@ -41,87 +44,111 @@ router.post("/login", (req, res) => {
   );
 });
 
+/* =====================================
+   GET ALL USERS + SESSION + CHAT COUNT
+===================================== */
 router.get("/users", (req, res) => {
-  const query =
-    "SELECT u.name, u.email, u.is_active, " +
-    "COUNT(c.id) AS chat_count, MAX(c.created_at) AS last_message_at " +
-    "FROM users u " +
-    "LEFT JOIN chat_messages c ON c.user_email = u.email " +
-    "GROUP BY u.name, u.email, u.is_active " +
-    "ORDER BY last_message_at DESC";
+  const query = `
+    SELECT 
+      u.name,
+      u.email,
+      u.region,
+      u.phone,
+      u.age,
+      u.is_active,
+      COUNT(DISTINCT s.id) AS total_sessions,
+      COUNT(m.id) AS total_messages,
+      MAX(m.created_at) AS last_activity
+    FROM users u
+    LEFT JOIN chat_sessions s ON s.user_email = u.email
+    LEFT JOIN chat_messages m ON m.session_id = s.id
+    GROUP BY u.email
+    ORDER BY last_activity DESC
+  `;
 
-  db.query(query, (err, results) => {
+  db.query(query, (err, users) => {
     if (err) {
-      console.error("Admin users DB error:", err);
-      return res.json({
-        success: false,
-        message: "DB error",
-        error: err.code || err.message,
-      });
+      console.error("Admin user list error:", err);
+      return res.json({ success: false, message: "DB error" });
     }
-    res.json({ success: true, users: results });
+
+    res.json({ success: true, users });
   });
 });
 
+/* =====================================
+   GET SINGLE USER DETAILS
+===================================== */
 router.get("/users/:email", (req, res) => {
-  const { email } = req.params;
-
   db.query(
-    "SELECT name, email, is_active FROM users WHERE email = ?",
-    [email],
+    "SELECT name, email, region, phone, age, is_active, created_at FROM users WHERE email = ?",
+    [req.params.email],
     (err, results) => {
       if (err) {
-        console.error("Admin user detail DB error:", err);
-        return res.json({
-          success: false,
-          message: "DB error",
-          error: err.code || err.message,
-        });
+        return res.json({ success: false, message: "DB error" });
       }
-      if (results.length === 0)
+
+      if (results.length === 0) {
         return res.json({ success: false, message: "User not found" });
+      }
 
       res.json({ success: true, user: results[0] });
     }
   );
 });
 
-router.get("/users/:email/chats", (req, res) => {
-  const { email } = req.params;
-  const limit = Number.parseInt(req.query.limit, 10) || 200;
-
+/* =====================================
+   GET USER SESSIONS
+===================================== */
+router.get("/sessions/:email", (req, res) => {
   db.query(
-    "SELECT id, sender, message, created_at FROM chat_messages WHERE user_email = ? ORDER BY created_at DESC LIMIT ?",
-    [email, limit],
-    (err, results) => {
+    `
+    SELECT 
+      id,
+      title,
+      created_at,
+      (SELECT COUNT(*) FROM chat_messages WHERE session_id = chat_sessions.id) AS message_count
+    FROM chat_sessions
+    WHERE user_email = ?
+    ORDER BY created_at DESC
+    `,
+    [req.params.email],
+    (err, sessions) => {
       if (err) {
-        console.error("Admin chat list DB error:", err);
-        return res.json({
-          success: false,
-          message: "DB error",
-          error: err.code || err.message,
-        });
+        return res.json({ success: false, message: "DB error" });
       }
-      res.json({ success: true, chats: results });
+
+      res.json({ success: true, sessions });
     }
   );
 });
 
-router.patch("/users/:email/deactivate", (req, res) => {
-  const { email } = req.params;
+/* =====================================
+   GET SESSION MESSAGES
+===================================== */
+router.get("/sessions/:sessionId/messages", (req, res) => {
+  db.query(
+    "SELECT sender, message, created_at FROM chat_messages WHERE session_id = ? ORDER BY created_at ASC",
+    [req.params.sessionId],
+    (err, messages) => {
+      if (err) {
+        return res.json({ success: false, message: "DB error" });
+      }
 
+      res.json({ success: true, messages });
+    }
+  );
+});
+
+/* =====================================
+   ACTIVATE / DEACTIVATE USER
+===================================== */
+router.patch("/users/:email/deactivate", (req, res) => {
   db.query(
     "UPDATE users SET is_active = 0 WHERE email = ?",
-    [email],
+    [req.params.email],
     (err, result) => {
-      if (err) {
-        console.error("Admin deactivate DB error:", err);
-        return res.json({
-          success: false,
-          message: "DB error",
-          error: err.code || err.message,
-        });
-      }
+      if (err) return res.json({ success: false, message: "DB error" });
       if (result.affectedRows === 0)
         return res.json({ success: false, message: "User not found" });
 
@@ -131,20 +158,11 @@ router.patch("/users/:email/deactivate", (req, res) => {
 });
 
 router.patch("/users/:email/activate", (req, res) => {
-  const { email } = req.params;
-
   db.query(
     "UPDATE users SET is_active = 1 WHERE email = ?",
-    [email],
+    [req.params.email],
     (err, result) => {
-      if (err) {
-        console.error("Admin activate DB error:", err);
-        return res.json({
-          success: false,
-          message: "DB error",
-          error: err.code || err.message,
-        });
-      }
+      if (err) return res.json({ success: false, message: "DB error" });
       if (result.affectedRows === 0)
         return res.json({ success: false, message: "User not found" });
 

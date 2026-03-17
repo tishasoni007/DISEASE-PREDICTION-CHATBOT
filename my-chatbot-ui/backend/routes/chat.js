@@ -3,40 +3,115 @@ const db = require("../db");
 
 const router = express.Router();
 
+/* =================================
+   CHAT ROUTE (Session Based)
+================================= */
 router.post("/", async (req, res) => {
   try {
-    const { message, userEmail } = req.body || {};
+    const { message, userEmail, sessionId } = req.body;
 
-    const response = await fetch("http://127.0.0.1:5001/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(req.body)
+    if (!message || !userEmail) {
+      return res.json({ success: false, message: "Message and user required" });
+    }
+
+    let activeSessionId = sessionId;
+
+    /* ===============================
+       1️⃣ CREATE SESSION IF NOT PROVIDED
+    =============================== */
+    if (!activeSessionId) {
+      const newSession = await new Promise((resolve, reject) => {
+        db.query(
+          "INSERT INTO chat_sessions (user_email, title) VALUES (?, ?)",
+          [userEmail, "New Chat"],
+          (err, result) => {
+            if (err) reject(err);
+            else resolve(result.insertId);
+          }
+        );
+      });
+
+      activeSessionId = newSession;
+    }
+
+    /* ===============================
+       2️⃣ SAVE USER MESSAGE
+    =============================== */
+    await new Promise((resolve, reject) => {
+      db.query(
+        "INSERT INTO chat_messages (session_id, user_email, sender, message) VALUES (?, ?, ?, ?)",
+        [activeSessionId, userEmail, "user", message],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
     });
 
-    const data = await response.json();
+    /* ===============================
+       3️⃣ AUTO-RENAME SESSION (First message)
+    =============================== */
+    db.query(
+      "SELECT COUNT(*) AS count FROM chat_messages WHERE session_id = ?",
+      [activeSessionId],
+      (err, result) => {
+        if (!err && result[0].count === 1) {
+          const shortTitle = message.substring(0, 30);
+          db.query(
+            "UPDATE chat_sessions SET title = ? WHERE id = ?",
+            [shortTitle, activeSessionId]
+          );
+        }
+      }
+    );
 
-    if (userEmail && message) {
+    /* ===============================
+       4️⃣ CALL FLASK ML BACKEND
+    =============================== */
+    const mlResponse = await fetch("http://127.0.0.1:5001/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message })
+    });
+
+    const data = await mlResponse.json();
+
+    const botReply =
+      data.reply ||
+      data.message ||
+      data.advice ||
+      "Sorry, I could not process that.";
+
+    /* ===============================
+       5️⃣ SAVE BOT MESSAGE
+    =============================== */
+    await new Promise((resolve, reject) => {
       db.query(
-        "INSERT INTO chat_messages (user_email, sender, message) VALUES (?, ?, ?)",
-        [userEmail, "user", message]
+        "INSERT INTO chat_messages (session_id, user_email, sender, message) VALUES (?, ?, ?, ?)",
+        [activeSessionId, userEmail, "bot", botReply],
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
       );
-    }
+    });
 
-    const botText = data.reply || data.message || data.advice || null;
-    if (userEmail && botText) {
-      db.query(
-        "INSERT INTO chat_messages (user_email, sender, message) VALUES (?, ?, ?)",
-        [userEmail, "bot", botText]
-      );
-    }
-
-    res.json(data);
+    /* ===============================
+       6️⃣ RETURN RESPONSE
+    =============================== */
+    res.json({
+      success: true,
+      reply: botReply,
+      sessionId: activeSessionId,
+      confidence: data.confidence || null
+    });
 
   } catch (error) {
-    console.error("Error connecting to ML service:", error);
-    res.status(500).json({ error: "ML service not available" });
+    console.error("Chat route error:", error);
+    res.status(500).json({
+      success: false,
+      message: "ML service not available"
+    });
   }
 });
 

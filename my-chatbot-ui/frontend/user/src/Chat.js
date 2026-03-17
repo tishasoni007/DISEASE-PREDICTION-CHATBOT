@@ -1,75 +1,81 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './Chat.css';
+import React, { useState, useEffect, useRef } from "react";
+import "./Chat.css";
 
-function Chat({ messages, onNewMessage }) {
-  const [input, setInput] = useState('');
+function Chat({ activeSession, userEmail, refreshSessions }) {
+
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messageAreaRef = useRef(null);
 
   useEffect(() => {
+    if (!activeSession) {
+      setMessages([]);
+      return;
+    }
+
+    fetch(`http://localhost:5000/api/chat/sessions/messages/${activeSession}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setMessages(data.messages || []);
+        } else {
+          setMessages([]);
+        }
+      })
+      .catch(() => setMessages([]));
+  }, [activeSession]);
+
+  useEffect(() => {
     if (messageAreaRef.current) {
-      messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+      messageAreaRef.current.scrollTop =
+        messageAreaRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // 🔹 Send user input to Node backend (which forwards to Flask ML)
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !userEmail) return;
 
-    const userMessage = {
-      id: Date.now(),
-      text: input,
-      sender: "user"
-    };
-    onNewMessage(userMessage);
+    const text = input;
+    setInput("");
+
+    setMessages(prev => [
+      ...prev,
+      { sender: "user", message: text }
+    ]);
 
     setIsLoading(true);
-    setInput('');
 
     try {
-      const storedUser = localStorage.getItem("user");
-      const userEmail = storedUser ? JSON.parse(storedUser).email : null;
-
       const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,   // 🔥 IMPORTANT: matches Flask chat logic
-          userEmail
+          message: text,
+          userEmail,
+          sessionId: activeSession
         })
       });
 
       const data = await response.json();
 
-      const botMessage = {
-        id: Date.now() + 1,
-        text:
-          data.reply ||
-          data.message ||
-          data.advice ||
-          "Unable to process your request.",
-        sender: "bot"
-      };
+      setMessages(prev => [
+        ...prev,
+        { sender: "bot", message: data.reply || "Unable to process request." }
+      ]);
 
-      onNewMessage(botMessage);
+      if (refreshSessions) {
+        refreshSessions();
+      }
 
-    } catch (error) {
-      onNewMessage({
-        id: Date.now() + 2,
-        text: "Server error. Please try again later.",
-        sender: "bot"
-      });
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        { sender: "bot", message: "Server error" }
+      ]);
     }
 
     setIsLoading(false);
-  };
-
-  const handleKeyPress = (event) => {
-    if (event.key === 'Enter') {
-      handleSend();
-    }
   };
 
   return (
@@ -79,36 +85,39 @@ function Chat({ messages, onNewMessage }) {
       </div>
 
       <div className="message-area" ref={messageAreaRef}>
-        {messages.map(msg => (
-          <div key={msg.id} className={`message-wrapper ${msg.sender}`}>
+
+        {messages.length === 0 && (
+          <div className="message-wrapper bot">
+            <div className="message bot">
+              Hello 👋 How can I help you today?
+            </div>
+          </div>
+        )}
+
+        {messages.map((msg, i) => (
+          <div key={i} className={`message-wrapper ${msg.sender}`}>
             <div className={`message ${msg.sender}`}>
-              <p>{msg.text}</p>
+              {msg.message}
             </div>
           </div>
         ))}
 
         {isLoading && (
           <div className="message-wrapper bot">
-            <div className="message bot">
-              <p className="loading-dots">
-                <span>.</span><span>.</span><span>.</span>
-              </p>
-            </div>
+            <div className="message bot">...</div>
           </div>
         )}
+
       </div>
 
       <div className="input-area">
         <input
-          type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Describe your symptoms..."
+          placeholder="Write message..."
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend()}
         />
-        <button onClick={handleSend} disabled={isLoading}>
-          ▶
-        </button>
+        <button onClick={handleSend} disabled={isLoading}>▶</button>
       </div>
     </div>
   );

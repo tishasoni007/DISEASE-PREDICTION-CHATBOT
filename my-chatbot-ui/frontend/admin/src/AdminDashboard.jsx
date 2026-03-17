@@ -23,7 +23,7 @@ function AdminDashboard() {
           setUsers(data.users || []);
           setStatus("ready");
         } else {
-          setErrorMessage(data.error || data.message || "Unable to load users right now.");
+          setErrorMessage(data.message || "Unable to load users right now.");
           setStatus("error");
         }
       } catch (err) {
@@ -59,19 +59,15 @@ function AdminDashboard() {
         />
       </div>
 
-      {status === "loading" ? (
-        <div className="card">Loading users...</div>
-      ) : null}
+      {status === "loading" && <div className="card">Loading users...</div>}
+      {status === "error" && <div className="card">{errorMessage}</div>}
 
-      {status === "error" ? (
-        <div className="card">{errorMessage}</div>
-      ) : null}
-
-      {status === "ready" ? (
+      {status === "ready" && (
         <div className="grid">
-          {filteredUsers.length === 0 ? (
+          {filteredUsers.length === 0 && (
             <div className="card">No users found yet.</div>
-          ) : null}
+          )}
+
           {filteredUsers.map((user) => (
             <div className="card" key={user.email}>
               <div className="card-row">
@@ -83,25 +79,33 @@ function AdminDashboard() {
                   {user.is_active ? "Active" : "Deactivated"}
                 </span>
               </div>
+
               <div className="card-row">
                 <div className="stat">
-                  <span className="stat-label">Chats</span>
-                  <span className="stat-value">{user.chat_count || 0}</span>
+                  <span className="stat-label">Sessions</span>
+                  <span className="stat-value">{user.total_sessions || 0}</span>
                 </div>
+
                 <div className="stat">
-                  <span className="stat-label">Last message</span>
+                  <span className="stat-label">Last activity</span>
                   <span className="stat-value">
-                    {user.last_message_at ? new Date(user.last_message_at).toLocaleString() : "-"}
+                    {user.last_activity
+                      ? new Date(user.last_activity).toLocaleString()
+                      : "-"}
                   </span>
                 </div>
               </div>
-              <Link className="primary-btn" to={`/users/${encodeURIComponent(user.email)}`}>
+
+              <Link
+                className="primary-btn"
+                to={`/users/${encodeURIComponent(user.email)}`}
+              >
                 Review user
               </Link>
             </div>
           ))}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

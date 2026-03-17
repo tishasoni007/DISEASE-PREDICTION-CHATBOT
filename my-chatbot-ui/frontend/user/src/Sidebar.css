@@ -1,0 +1,114 @@
+.sidebar {
+  width: 240px;
+  height: 90.3vh;
+  margin: 0px;
+  padding: 20px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+}
+
+.new-chat-btn {
+  background: linear-gradient(135deg, #d982ef, #c56de0);
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 25px;
+  transition: 0.2s ease;
+}
+
+.new-chat-btn:hover {
+  transform: scale(1.03);
+}
+
+/* CHAT HISTORY BOX */
+.history-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-section h4 {
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: #6b7280;
+}
+
+.history-list {
+  background: #f9fafb;
+  border-radius: 16px;
+  padding: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.history-item {
+  padding: 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.history-item:hover {
+  background: #ececec;
+}
+
+.history-item.active {
+  background: #d982ef;
+  color: white;
+}
+
+/* DOCTOR BOX */
+.doctor-section {
+  margin-top: 20px;
+}
+
+.doctor-toggle {
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: #f3f4f6;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.doctor-list {
+  margin-top: 10px;
+  background: #f9fafb;
+  border-radius: 14px;
+  padding: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.doctor-item {
+  padding: 8px;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+/* PROFILE BUTTON */
+.profile-section {
+  margin-top: 20px;
+}
+
+.profile-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 14px;
+  border: none;
+  background: #d982ef;
+  color: white;
+  cursor: pointer;
+}
+.history-time {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
