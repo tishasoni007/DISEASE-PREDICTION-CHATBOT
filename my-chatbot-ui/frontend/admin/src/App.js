@@ -12,6 +12,7 @@ function App() {
   };
 
   const showNav = admin && location.pathname !== "/";
+  const isUsersRoute = location.pathname === "/dashboard" || location.pathname.startsWith("/users/");
 
   return (
     <div className="admin-shell">
@@ -26,8 +27,18 @@ function App() {
 
         {showNav ? (
           <div className="admin-actions">
-            <Link className="ghost-btn" to="/dashboard">Dashboard</Link>
-            <button className="ghost-btn" onClick={handleLogout}>Logout</button>
+            <nav className="admin-nav" aria-label="Admin navigation">
+              <Link
+                className={`nav-link ${isUsersRoute ? "active" : ""}`}
+                to="/dashboard"
+              >
+                Users
+              </Link>
+            </nav>
+
+            <button className="ghost-btn logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
           </div>
         ) : null}
       </header>

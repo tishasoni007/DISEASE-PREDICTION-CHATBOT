@@ -134,8 +134,7 @@ function UserDetail() {
           {sessions.map((session) => (
             <div
               key={session.id}
-              className="chat-item"
-              style={{ cursor: "pointer", marginBottom: "10px" }}
+              className="chat-item session-entry"
               onClick={() => loadMessages(session.id)}
             >
               <strong>{session.title}</strong>
@@ -147,16 +146,10 @@ function UserDetail() {
 
           {selectedSession && (
             <>
-              <h3 style={{ marginTop: "20px" }}>Conversation</h3>
+              <h3 className="section-title">Conversation</h3>
 
               {/* SCROLLABLE CONVERSATION AREA */}
-              <div
-                style={{
-                  maxHeight: "420px",
-                  overflowY: "auto",
-                  paddingRight: "6px"
-                }}
-              >
+              <div className="conversation-panel">
                 {messages.map((msg, i) => (
                   <div key={i} className={`chat-item ${msg.sender}`}>
                     <div className="chat-meta">

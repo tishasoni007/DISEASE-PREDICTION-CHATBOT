@@ -3,6 +3,20 @@ const db = require("../db");
 
 const router = express.Router();
 
+function isGreetingMessage(message) {
+  const text = String(message || "").trim().toLowerCase();
+  if (!text) return false;
+
+  const greetingPatterns = [
+    /^(hi|hello|hey)\b/,
+    /^good\s*(morning|afternoon|evening)\b/,
+    /^namaste\b/,
+  ];
+
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+  return wordCount <= 6 && greetingPatterns.some((pattern) => pattern.test(text));
+}
+
 /* =================================
    CHAT ROUTE (Session Based)
 ================================= */
@@ -64,6 +78,29 @@ router.post("/", async (req, res) => {
         }
       }
     );
+
+    if (isGreetingMessage(message)) {
+      const greetingReply =
+        "Hello 👋 I’m here to help. Please share your symptoms so I can assist you better.";
+
+      await new Promise((resolve, reject) => {
+        db.query(
+          "INSERT INTO chat_messages (session_id, user_email, sender, message) VALUES (?, ?, ?, ?)",
+          [activeSessionId, userEmail, "bot", greetingReply],
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+
+      return res.json({
+        success: true,
+        reply: greetingReply,
+        sessionId: activeSessionId,
+        confidence: null,
+      });
+    }
 
     /* ===============================
        4️⃣ CALL FLASK ML BACKEND

@@ -46,11 +46,7 @@ function Login() {
     <div className="login-container">
       <h1>Login to Disease Assistant</h1>
 
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="auth-message error">{error}</div>}
 
       <form onSubmit={handleSubmit} className="login-form">
 

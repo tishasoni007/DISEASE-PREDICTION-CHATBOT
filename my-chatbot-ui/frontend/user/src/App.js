@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Chat from "./Chat";
 import Sidebar from "./Sidebar";
-import Profile from "./Profile";
 import "./App.css";
 
 function App() {
@@ -9,26 +8,43 @@ function App() {
 
   const [sessions, setSessions] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
-  const [showProfile, setShowProfile] = useState(false);
+  const [chatResetToken, setChatResetToken] = useState(0);
 
-  const loadSessions = () => {
+  const loadSessions = (preferredSessionId = null, options = { selectFallback: true }) => {
     if (!storedUser) return;
 
     fetch(`http://localhost:5000/api/chat/sessions/${storedUser.email}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          setSessions(data.sessions);
-          if (!activeSession && data.sessions.length > 0) {
-            setActiveSession(data.sessions[0].id);
-          }
+          const nextSessions = data.sessions || [];
+          setSessions(nextSessions);
+
+          setActiveSession((currentActive) => {
+            if (preferredSessionId && nextSessions.some((item) => item.id === preferredSessionId)) {
+              return preferredSessionId;
+            }
+
+            if (currentActive && nextSessions.some((item) => item.id === currentActive)) {
+              return currentActive;
+            }
+
+            if (options.selectFallback) {
+              return nextSessions.length > 0 ? nextSessions[0].id : null;
+            }
+
+            return null;
+          });
         }
       });
   };
 
   useEffect(() => {
-    loadSessions();
-  }, []);
+    if (!storedUser?.email) return;
+    setActiveSession(null);
+    setChatResetToken((prev) => prev + 1);
+    loadSessions(null, { selectFallback: false });
+  }, [storedUser?.email]);
 
   return (
     <div className="app-container">
@@ -37,35 +53,51 @@ function App() {
         activeSession={activeSession}
         onSelectSession={(id) => {
           setActiveSession(id);
-          setShowProfile(false);
         }}
-        onNewChat={async () => {
-          const res = await fetch("http://localhost:5000/api/chat/sessions/new", {
-            method: "POST",
+        onNewChat={() => {
+          setActiveSession(null);
+          setChatResetToken((prev) => prev + 1);
+          loadSessions(null, { selectFallback: false });
+        }}
+        onDeleteSession={async (sessionId) => {
+          const deleteUrl = `http://localhost:5000/api/chat/sessions/${sessionId}?userEmail=${encodeURIComponent(storedUser.email)}`;
+
+          const res = await fetch(deleteUrl, {
+            method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userEmail: storedUser.email })
           });
 
           const data = await res.json();
           if (data.success) {
+            setSessions((prevSessions) => {
+              const remaining = prevSessions.filter((session) => session.id !== sessionId);
+
+              setActiveSession((currentActive) => {
+                if (currentActive !== sessionId) return currentActive;
+                return remaining.length > 0 ? remaining[0].id : null;
+              });
+
+              return remaining;
+            });
+
             loadSessions();
-            setActiveSession(data.sessionId);
-            setShowProfile(false);
           }
         }}
         userEmail={storedUser?.email}
-        onProfileClick={() => setShowProfile(true)}
       />
 
-      {showProfile ? (
-        <Profile />
-      ) : (
-        <Chat
-          activeSession={activeSession}
-          userEmail={storedUser?.email}
-          refreshSessions={loadSessions}
-        />
-      )}
+      <Chat
+        activeSession={activeSession}
+        userEmail={storedUser?.email}
+        refreshSessions={loadSessions}
+        resetToken={chatResetToken}
+        onSessionResolved={(sessionId) => {
+          if (sessionId) {
+            setActiveSession(sessionId);
+          }
+        }}
+      />
     </div>
   );
 }

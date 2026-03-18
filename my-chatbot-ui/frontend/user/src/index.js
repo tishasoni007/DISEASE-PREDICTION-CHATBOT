@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import App from "./App";
 import Login from "./Login";
 import Register from "./Register";
+import BookAppointment from "./BookAppointment";
 import "./index.css";
 
 /*
@@ -40,6 +41,15 @@ root.render(
         element={
           <ProtectedRoute>
             <App />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/book-appointment"
+        element={
+          <ProtectedRoute>
+            <BookAppointment />
           </ProtectedRoute>
         }
       />

@@ -67,4 +67,44 @@ router.get("/:email", (req, res) => {
   });
 });
 
+/* ===============================
+   DELETE SESSION
+=============================== */
+router.delete("/:sessionId", (req, res) => {
+  const { sessionId } = req.params;
+  const userEmail = (req.body && req.body.userEmail) || req.query.userEmail;
+
+  if (!sessionId || !userEmail) {
+    return res.json({ success: false, message: "sessionId and userEmail are required" });
+  }
+
+  db.query(
+    "DELETE FROM chat_messages WHERE session_id = ?",
+    [sessionId],
+    (messagesErr) => {
+      if (messagesErr) {
+        console.error(messagesErr);
+        return res.json({ success: false, message: "Unable to delete session messages" });
+      }
+
+      db.query(
+        "DELETE FROM chat_sessions WHERE id = ? AND user_email = ?",
+        [sessionId, userEmail],
+        (sessionErr, result) => {
+          if (sessionErr) {
+            console.error(sessionErr);
+            return res.json({ success: false, message: "Unable to delete session" });
+          }
+
+          if (result.affectedRows === 0) {
+            return res.json({ success: false, message: "Session not found" });
+          }
+
+          return res.json({ success: true, message: "Session deleted" });
+        }
+      );
+    }
+  );
+});
+
 module.exports = router;

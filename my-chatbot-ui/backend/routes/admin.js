@@ -171,4 +171,29 @@ router.patch("/users/:email/activate", (req, res) => {
   );
 });
 
+/* =====================================
+   VIEW ALL TABLE RECORDS
+===================================== */
+router.get("/doctors-list", (req, res) => {
+  db.query("SELECT * FROM doctors", (err, doctors) => {
+    if (err) {
+      return res.json({ success: false, message: "Error fetching doctors", error: err.message });
+    }
+    
+    db.query("SELECT * FROM doctor_accounts", (err, accounts) => {
+      if (err) {
+        return res.json({ success: false, message: "Error fetching accounts", error: err.message });
+      }
+      
+      db.query("SELECT * FROM appointments", (err, appointments) => {
+        if (err) {
+          return res.json({ success: false, message: "Error fetching appointments", error: err.message });
+        }
+        
+        res.json({ success: true, doctors, accounts, appointments });
+      });
+    });
+  });
+});
+
 module.exports = router;

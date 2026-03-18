@@ -56,17 +56,9 @@ function Register() {
     <div className="login-container">
       <h1>Create Account</h1>
 
-      {error && (
-        <div style={{ color: "red", marginBottom: "10px" }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="auth-message error">{error}</div>}
 
-      {success && (
-        <div style={{ color: "green", marginBottom: "10px" }}>
-          {success}
-        </div>
-      )}
+      {success && <div className="auth-message success">{success}</div>}
 
       <form onSubmit={handleSubmit} className="login-form">
 
