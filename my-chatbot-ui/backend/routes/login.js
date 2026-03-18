@@ -6,8 +6,18 @@ const router = express.Router();
 
 router.post("/", (req, res) => {
   const { email, password } = req.body;
+  const normalizedEmail = String(email || "").trim().toLowerCase();
 
-  db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
+  if (!normalizedEmail || !password) {
+    return res.json({ success: false, message: "Email and password are required" });
+  }
+
+  db.query("SELECT * FROM users WHERE email = ?", [normalizedEmail], async (err, results) => {
+    if (err) {
+      console.error("Login error:", err);
+      return res.json({ success: false, message: "Database error" });
+    }
+
     if (results.length === 0)
       return res.json({ success: false, message: "User not found" });
 
