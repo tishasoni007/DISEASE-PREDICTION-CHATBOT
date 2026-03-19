@@ -58,13 +58,22 @@ const queries = [
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`,
 
+  `CREATE TABLE IF NOT EXISTS chat_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_email VARCHAR(200) NOT NULL,
+    title VARCHAR(255) NOT NULL DEFAULT 'New Chat',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`,
+
   `CREATE TABLE IF NOT EXISTS chat_messages (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    session_id INT NOT NULL DEFAULT 0,
     user_email VARCHAR(200) NOT NULL,
     sender VARCHAR(10) NOT NULL,
     message TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_user_email (user_email)
+    INDEX idx_user_email (user_email),
+    INDEX idx_session_id (session_id)
   )`,
 ];
 
@@ -132,6 +141,22 @@ async function ensureUsersConstraints() {
   }
 }
 
+async function ensureChatMessagesSessionColumn() {
+  try {
+    const sessionColumnRows = await runSelectQuery("SHOW COLUMNS FROM chat_messages LIKE 'session_id'");
+    if (sessionColumnRows.length === 0) {
+      await runQuery("ALTER TABLE chat_messages ADD COLUMN session_id INT NOT NULL DEFAULT 0 AFTER id");
+      await runQuery("ALTER TABLE chat_messages ADD INDEX idx_session_id (session_id)");
+    }
+  } catch (error) {
+    if (error.code === "ER_DUP_FIELDNAME" || error.code === "ER_DUP_KEYNAME") {
+      return;
+    }
+
+    console.warn("Chat messages session column setup warning:", error.message);
+  }
+}
+
 async function initializeDatabase() {
   try {
     for (const sql of queries) {
@@ -139,6 +164,7 @@ async function initializeDatabase() {
     }
 
     await ensureUsersConstraints();
+    await ensureChatMessagesSessionColumn();
     console.log("Database initialization complete");
   } catch (error) {
     console.error("Database initialization failed:", error.message);

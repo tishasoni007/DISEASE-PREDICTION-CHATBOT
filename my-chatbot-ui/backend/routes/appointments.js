@@ -3,6 +3,8 @@ const db = require("../db");
 
 const router = express.Router();
 
+
+// ✅ REQUEST APPOINTMENT
 router.post("/request", (req, res) => {
   const { userEmail, doctorId, appointmentDate, appointmentTime, symptoms } = req.body || {};
 
@@ -59,6 +61,8 @@ router.post("/request", (req, res) => {
   });
 });
 
+
+// ✅ USER APPOINTMENTS
 router.get("/user/:email", (req, res) => {
   const query = `
     SELECT
@@ -91,5 +95,34 @@ router.get("/user/:email", (req, res) => {
     return res.json({ success: true, appointments });
   });
 });
+
+
+// ✅ 🔥 DOCTOR CALENDAR (FIXED QUERY)
+router.get("/doctor/:id/calendar", (req, res) => {
+  const doctorId = req.params.id;
+
+  const query = `
+    SELECT
+      DATE_FORMAT(appointment_date, '%Y-%m-%d') AS appointment_date,
+      COUNT(*) AS total,
+      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+      SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) AS approved,
+      SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected
+    FROM appointments
+    WHERE doctor_id = ?
+    GROUP BY DATE_FORMAT(appointment_date, '%Y-%m-%d')
+    ORDER BY appointment_date ASC
+  `;
+
+  db.query(query, [doctorId], (err, result) => {
+    if (err) {
+      console.error("Doctor calendar fetch error:", err);
+      return res.json({ success: false, message: "Database error" });
+    }
+
+    return res.json({ success: true, calendar: result });
+  });
+});
+
 
 module.exports = router;

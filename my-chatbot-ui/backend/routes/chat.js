@@ -63,7 +63,7 @@ router.post("/", async (req, res) => {
     });
 
     /* ===============================
-       3️⃣ AUTO-RENAME SESSION (First message)
+       3️⃣ AUTO-RENAME SESSION (First message in this session)
     =============================== */
     db.query(
       "SELECT COUNT(*) AS count FROM chat_messages WHERE session_id = ?",
@@ -79,6 +79,9 @@ router.post("/", async (req, res) => {
       }
     );
 
+    /* ===============================
+       GREETING RESPONSE
+    =============================== */
     if (isGreetingMessage(message)) {
       const greetingReply =
         "Hello 👋 I’m here to help. Please share your symptoms so I can assist you better.";
@@ -134,13 +137,35 @@ router.post("/", async (req, res) => {
     });
 
     /* ===============================
-       6️⃣ RETURN RESPONSE
+       6️⃣ UPDATE SESSION TITLE FOR FINAL PREDICTION
+       (So chat history headings show the result)
+    =============================== */
+    const confidence = typeof data.confidence === "number" ? data.confidence : null;
+
+    if (confidence !== null) {
+      const predictionLabel = (conf) => {
+        if (conf >= 75) return `High chance of typhoid (${conf}%)`;
+        if (conf >= 45) return `Moderate chance of typhoid (${conf}%)`;
+        return `Low chance of typhoid (${conf}%)`;
+      };
+
+      db.query(
+        "UPDATE chat_sessions SET title = ? WHERE id = ?",
+        [predictionLabel(confidence), activeSessionId],
+        (err) => {
+          if (err) console.warn("Failed to update session title:", err);
+        }
+      );
+    }
+
+    /* ===============================
+       7️⃣ RETURN RESPONSE
     =============================== */
     res.json({
       success: true,
       reply: botReply,
       sessionId: activeSessionId,
-      confidence: data.confidence || null
+      confidence: confidence
     });
 
   } catch (error) {

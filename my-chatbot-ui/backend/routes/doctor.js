@@ -142,8 +142,8 @@ router.get("/calendar/:doctorId", (req, res) => {
       SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) AS rejected
     FROM appointments
     WHERE doctor_id = ?
-    GROUP BY DATE(appointment_date)
-    ORDER BY DATE(appointment_date) ASC
+    GROUP BY DATE_FORMAT(appointment_date, '%Y-%m-%d')
+    ORDER BY appointment_date ASC
   `;
 
   db.query(query, [doctorId], (err, calendarData) => {
