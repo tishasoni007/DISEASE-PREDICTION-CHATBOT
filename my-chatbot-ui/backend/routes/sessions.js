@@ -52,7 +52,19 @@ router.get("/:email", (req, res) => {
     SELECT 
       s.id,
       s.title,
-      MAX(m.created_at) AS last_message_time
+      MAX(m.created_at) AS last_message_time,
+      (SELECT message FROM chat_messages 
+       WHERE session_id = s.id
+         AND sender = 'bot'
+         AND (
+           LOWER(message) LIKE '%high possibility%'
+           OR LOWER(message) LIKE '%moderate possibility%'
+           OR LOWER(message) LIKE '%medium possibility%'
+           OR LOWER(message) LIKE '%low possibility%'
+           OR LOWER(message) LIKE '%do not strongly indicate%'
+           OR LOWER(message) LIKE '%not strongly indicate%'
+         )
+       ORDER BY id DESC LIMIT 1) AS last_bot_message
     FROM chat_sessions s
     LEFT JOIN chat_messages m ON s.id = m.session_id
     WHERE s.user_email = ?
@@ -63,7 +75,33 @@ router.get("/:email", (req, res) => {
   db.query(query, [req.params.email], (err, sessions) => {
     if (err) return res.json({ success: false });
 
-    res.json({ success: true, sessions });
+    const normalizedSessions = (sessions || []).map((session) => {
+      const lastBotMessage = String(session.last_bot_message || "").toLowerCase();
+      let predictionHeading = null;
+
+      if (lastBotMessage.includes("high possibility")) {
+        predictionHeading = "High possibility of typhoid";
+      } else if (
+        lastBotMessage.includes("moderate possibility") ||
+        lastBotMessage.includes("medium possibility")
+      ) {
+        predictionHeading = "Medium possibility of typhoid";
+      } else if (
+        lastBotMessage.includes("low possibility") ||
+        lastBotMessage.includes("do not strongly indicate") ||
+        lastBotMessage.includes("not strongly indicate")
+      ) {
+        predictionHeading = "No possibility of typhoid";
+      }
+
+      return {
+        ...session,
+        prediction_heading: predictionHeading,
+        display_title: predictionHeading || session.title,
+      };
+    });
+
+    res.json({ success: true, sessions: normalizedSessions });
   });
 });
 

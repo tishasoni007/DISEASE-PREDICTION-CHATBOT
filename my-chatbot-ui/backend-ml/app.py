@@ -200,7 +200,7 @@ def run_prediction():
     final_prob = (nb_prob + svm_prob) / 2
 
     if final_prob < 0.45:
-        reply = "Your symptoms do not strongly indicate typhoid. Monitor your health and consult a doctor if symptoms persist."
+        reply = "There is a low possibility of typhoid. Monitor your health and consult a doctor if symptoms persist."
     elif final_prob < 0.75:
         reply = "There is a moderate possibility of typhoid. Please consult a medical professional for confirmation."
     else:
@@ -252,6 +252,11 @@ def chat():
         return jsonify({"reply": reply, "confidence": confidence})
 
     # Info Query
+    if "what is typhoid" in text or "tell me about typhoid" in text or "explain typhoid" in text:
+        return jsonify({
+            "reply": "Typhoid is a bacterial infection caused by Salmonella Typhi and it usually spreads through contaminated food or water. Common symptoms include prolonged fever, headache, weakness, abdominal pain, diarrhea or constipation, and loss of appetite. It is usually treated with prescribed antibiotics, fluids, and rest. Prevention includes drinking safe water, proper hand hygiene, eating hygienic food, and vaccination in risk-prone areas."
+        })
+
     if any(k in text for k in ["what is", "why", "how", "precautions", "treatment"]):
         return jsonify({"reply": rag_explain(text)})
 

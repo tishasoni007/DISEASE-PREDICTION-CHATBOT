@@ -111,6 +111,37 @@ function UserDetail() {
         <div className="card">
           <h3>Account status</h3>
 
+          <div className="status-info">
+            <div className="status-row">
+              <span className="status-label">Status</span>
+              <span className={`pill ${user.is_active ? "active" : "inactive"}`}>
+                {user.is_active ? "Active" : "Deactivated"}
+              </span>
+            </div>
+            <div className="status-row">
+              <span className="status-label">Email</span>
+              <span className="status-value">{user.email}</span>
+            </div>
+            {user.phone && (
+              <div className="status-row">
+                <span className="status-label">Phone</span>
+                <span className="status-value">{user.phone}</span>
+              </div>
+            )}
+            {user.age && (
+              <div className="status-row">
+                <span className="status-label">Age</span>
+                <span className="status-value">{user.age}</span>
+              </div>
+            )}
+            {user.region && (
+              <div className="status-row">
+                <span className="status-label">Region</span>
+                <span className="status-value">{user.region}</span>
+              </div>
+            )}
+          </div>
+
           {user.is_active ? (
             <button className="danger-btn" onClick={handleDeactivate}>
               Deactivate account

@@ -238,9 +238,13 @@ function Register() {
             required
           >
             <option value="">Select your region</option>
+            <option value="Vadodara">Vadodara</option>
             <option value="Anand">Anand</option>
             <option value="Nadiad">Nadiad</option>
             <option value="Petlad">Petlad</option>
+            <option value="Ahmedabad">Ahmedabad</option>
+            <option value="Surat">Surat</option>
+            <option value="Rajkot">Rajkot</option>
           </select>
         </div>
 

@@ -17,6 +17,24 @@ function isGreetingMessage(message) {
   return wordCount <= 6 && greetingPatterns.some((pattern) => pattern.test(text));
 }
 
+function isTyphoidInfoMessage(message) {
+  const text = String(message || "").trim().toLowerCase();
+  if (!text) return false;
+
+  const directPatterns = [
+    /\bwhat\s+is\s+typhoid\b/,
+    /\babout\s+typhoid\b/,
+    /\btell\s+me\s+about\s+typhoid\b/,
+    /\bexplain\s+typhoid\b/,
+  ];
+
+  return directPatterns.some((pattern) => pattern.test(text));
+}
+
+function getTyphoidInfoReply() {
+  return "Typhoid is a bacterial infection caused by Salmonella Typhi, usually spread through contaminated food or water. Common symptoms include prolonged fever, headache, weakness, stomach pain, diarrhea or constipation, and loss of appetite. It is treated with prescribed antibiotics, rest, and hydration. To prevent typhoid, drink safe water, maintain hand hygiene, eat properly cooked food, and consider vaccination in higher-risk areas.";
+}
+
 /* =================================
    CHAT ROUTE (Session Based)
 ================================= */
@@ -72,7 +90,7 @@ router.post("/", async (req, res) => {
         if (!err && result[0].count === 1) {
           const shortTitle = message.substring(0, 30);
           db.query(
-            "UPDATE chat_sessions SET title = ? WHERE id = ?",
+            "UPDATE chat_sessions SET title = ? WHERE id = ? AND title = 'New Chat'",
             [shortTitle, activeSessionId]
           );
         }
@@ -100,6 +118,28 @@ router.post("/", async (req, res) => {
       return res.json({
         success: true,
         reply: greetingReply,
+        sessionId: activeSessionId,
+        confidence: null,
+      });
+    }
+
+    if (isTyphoidInfoMessage(message)) {
+      const typhoidInfoReply = getTyphoidInfoReply();
+
+      await new Promise((resolve, reject) => {
+        db.query(
+          "INSERT INTO chat_messages (session_id, user_email, sender, message) VALUES (?, ?, ?, ?)",
+          [activeSessionId, userEmail, "bot", typhoidInfoReply],
+          (err) => {
+            if (err) reject(err);
+            else resolve();
+          }
+        );
+      });
+
+      return res.json({
+        success: true,
+        reply: typhoidInfoReply,
         sessionId: activeSessionId,
         confidence: null,
       });
@@ -141,21 +181,38 @@ router.post("/", async (req, res) => {
        (So chat history headings show the result)
     =============================== */
     const confidence = typeof data.confidence === "number" ? data.confidence : null;
+    let titleToUpdate = null;
 
-    if (confidence !== null) {
-      const predictionLabel = (conf) => {
-        if (conf >= 75) return `High chance of typhoid (${conf}%)`;
-        if (conf >= 45) return `Moderate chance of typhoid (${conf}%)`;
-        return `Low chance of typhoid (${conf}%)`;
-      };
+    // Try to extract prediction from the bot's message text
+    const replyLower = botReply.toLowerCase();
+    if (replyLower.includes("high possibility")) {
+      titleToUpdate = "High possibility of typhoid";
+    } else if (replyLower.includes("moderate possibility") || replyLower.includes("medium possibility")) {
+      titleToUpdate = "Medium possibility of typhoid";
+    } else if (replyLower.includes("moderate chance")) {
+      titleToUpdate = "Moderate possibility of typhoid";
+    } else if (replyLower.includes("low possibility") || replyLower.includes("no possibility")) {
+      titleToUpdate = "Low possibility of typhoid";
+    } else if (confidence !== null) {
+      // Fall back to confidence-based labeling
+      if (confidence >= 75) titleToUpdate = `High possibility of typhoid (${confidence}%)`;
+      else if (confidence >= 45) titleToUpdate = `Moderate possibility of typhoid (${confidence}%)`;
+      else titleToUpdate = `Low possibility of typhoid (${confidence}%)`;
+    }
 
-      db.query(
-        "UPDATE chat_sessions SET title = ? WHERE id = ?",
-        [predictionLabel(confidence), activeSessionId],
-        (err) => {
-          if (err) console.warn("Failed to update session title:", err);
-        }
-      );
+    if (titleToUpdate) {
+      await new Promise((resolve) => {
+        db.query(
+          "UPDATE chat_sessions SET title = ? WHERE id = ?",
+          [titleToUpdate, activeSessionId],
+          (err) => {
+            if (err) {
+              console.warn("Failed to update session title:", err);
+            }
+            resolve();
+          }
+        );
+      });
     }
 
     /* ===============================

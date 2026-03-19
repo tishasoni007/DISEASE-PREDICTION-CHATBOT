@@ -172,6 +172,8 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .doctor-header {
@@ -226,6 +228,7 @@ body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
   animation: rise 0.4s ease;
+  overflow: hidden;
 }
 
 .doctor-card {
@@ -235,6 +238,9 @@ body {
   box-shadow: var(--shadow);
   padding: 24px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .doctor-card:hover {
@@ -451,9 +457,9 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 320px;
   overflow-y: auto;
   padding-right: 2px;
+  flex: 1;
 }
 
 .appointments-section-head {

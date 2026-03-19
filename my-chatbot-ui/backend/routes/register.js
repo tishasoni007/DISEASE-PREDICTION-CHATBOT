@@ -38,7 +38,7 @@ const validateAge = (age) => {
   return ageNum >= 1 && ageNum <= 120;
 };
 
-const VALID_REGIONS = ["Anand", "Nadiad", "Petlad"];
+const VALID_REGIONS = ["Vadodara", "Anand", "Nadiad", "Petlad", "Ahmedabad", "Surat", "Rajkot"];
 
 router.post("/", async (req, res) => {
   const { name, email, password, region, phone, age } = req.body;

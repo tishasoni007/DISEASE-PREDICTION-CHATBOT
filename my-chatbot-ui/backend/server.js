@@ -16,6 +16,7 @@ app.use("/api/chat", require("./routes/chat"));
 app.use("/api/chat/sessions", require("./routes/sessions"));
 app.use("/api/doctors", require("./routes/doctors"));
 app.use("/api/appointments", require("./routes/appointments"));
+app.use("/api/profile", require("./routes/profile"));
 
 app.use("/admin", require("./routes/admin"));
 app.use("/doctor", require("./routes/doctor"));

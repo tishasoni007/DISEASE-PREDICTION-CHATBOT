@@ -457,6 +457,34 @@ body {
   gap: 24px;
 }
 
+.status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+}
+
+.status-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 14px;
+}
+
+.status-value {
+  color: #4b5563;
+  font-size: 14px;
+}
+
 .session-entry {
   cursor: pointer;
   margin-bottom: 10px;
