@@ -652,6 +652,170 @@ body {
   color: #b91c1c;
 }
 
+.status-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.34);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1400;
+}
+
+.status-popup {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.2);
+  padding: 16px;
+}
+
+.status-popup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-popup-head h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.status-popup-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.status-popup-message {
+  margin-top: 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 11px 12px;
+  font-size: 0.94rem;
+}
+
+.status-popup-message.success {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.status-popup-message.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.status-popup-ok {
+  margin-top: 14px;
+  min-height: 40px;
+  min-width: 96px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), #c56de0);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status-note-field {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-note-field label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.status-note-field textarea {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.status-note-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217, 130, 239, 0.18);
+}
+
+.status-popup-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.status-popup-cancel {
+  min-height: 40px;
+  min-width: 96px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status-popup-actions button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.status-popup-actions .status-popup-ok {
+  margin-top: 0;
+}
+
+.cancellation-notification {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.cancellation-message {
+  color: #b91c1c;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.cancellation-ok-btn {
+  min-height: 36px;
+  min-width: 80px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #c56de0);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 @keyframes rise {
   from {
     opacity: 0;

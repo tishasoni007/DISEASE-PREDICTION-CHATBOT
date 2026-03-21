@@ -19,8 +19,23 @@ function DoctorDashboard() {
   });
   const [appointments, setAppointments] = useState([]);
   const [calendarData, setCalendarData] = useState([]);
-  const [message, setMessage] = useState("");
   const [datePopup, setDatePopup] = useState({ open: false, dateKey: "" });
+  const [statusPopup, setStatusPopup] = useState({
+    open: false,
+    title: "",
+    message: "",
+    isError: false,
+  });
+  const [notePopup, setNotePopup] = useState({
+    open: false,
+    appointmentId: null,
+    status: "",
+    note: "",
+    submitting: false,
+  });
+  const [cancellationMessage, setCancellationMessage] = useState("");
+  const previousAppointmentsRef = React.useRef([]);
+  const statusPopupTimeoutRef = React.useRef(null);
 
   const loadAppointments = useCallback(() => {
     if (!doctor.id) return;
@@ -29,7 +44,23 @@ function DoctorDashboard() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setAppointments(data.appointments || []);
+          const nextAppointments = data.appointments || [];
+          
+          const previousIds = new Set(previousAppointmentsRef.current.map((a) => a.id));
+          const nextIds = new Set(nextAppointments.map((a) => a.id));
+          const cancelledIds = [...previousIds].filter((id) => !nextIds.has(id));
+          
+          if (cancelledIds.length > 0 && previousAppointmentsRef.current.length > 0) {
+            const cancelledAppt = previousAppointmentsRef.current.find((a) => cancelledIds.includes(a.id));
+            if (cancelledAppt) {
+              setCancellationMessage(
+                `${cancelledAppt.user_name || "User"} cancelled their appointment on ${new Date(cancelledAppt.appointment_date).toLocaleDateString()}.`
+              );
+            }
+          }
+          
+          previousAppointmentsRef.current = nextAppointments;
+          setAppointments(nextAppointments);
         }
       })
       .catch(() => setAppointments([]));
@@ -64,7 +95,7 @@ function DoctorDashboard() {
     const intervalId = setInterval(() => {
       loadAppointments();
       loadCalendar();
-    }, 5000);
+    }, 3000);
 
     return () => clearInterval(intervalId);
   }, [doctor.id, loadAppointments, loadCalendar]);
@@ -81,6 +112,20 @@ function DoctorDashboard() {
       setSelectedDate(dateKeys[0]);
     }
   }, [calendarData, selectedDate]);
+
+  useEffect(() => {
+    if (statusPopup.open) {
+      statusPopupTimeoutRef.current = setTimeout(() => {
+        setStatusPopup({ open: false, title: "", message: "", isError: false });
+      }, 1000);
+    }
+
+    return () => {
+      if (statusPopupTimeoutRef.current) {
+        clearTimeout(statusPopupTimeoutRef.current);
+      }
+    };
+  }, [statusPopup.open]);
 
   const calendarMap = useMemo(() => {
     const map = {};
@@ -146,9 +191,7 @@ function DoctorDashboard() {
     setCurrentMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + offset, 1));
   };
 
-  const updateStatus = async (appointmentId, status) => {
-    const doctorNote = window.prompt("Optional note for user:") || "";
-
+  const updateStatus = async (appointmentId, status, doctorNote = "") => {
     try {
       const response = await fetch(`http://localhost:5000/doctor/appointments/${appointmentId}/status`, {
         method: "PATCH",
@@ -159,18 +202,62 @@ function DoctorDashboard() {
       const data = await response.json();
 
       if (data.success) {
-        setMessage(`Appointment ${status}.`);
+        setStatusPopup({
+          open: true,
+          title: status === "approved" ? "Appointment accepted" : "Appointment rejected",
+          message: data.message || `Appointment ${status}.`,
+          isError: false,
+        });
         loadAppointments();
         loadCalendar();
       } else {
-        setMessage(data.message || "Unable to update status.");
+        setStatusPopup({
+          open: true,
+          title: "Update failed",
+          message: data.message || "Unable to update status.",
+          isError: true,
+        });
       }
     } catch (requestError) {
-      setMessage("Server error while updating appointment.");
+      setStatusPopup({
+        open: true,
+        title: "Server error",
+        message: "Server error while updating appointment.",
+        isError: true,
+      });
     }
   };
 
+  const openNotePopup = (appointmentId, status) => {
+    setNotePopup({
+      open: true,
+      appointmentId,
+      status,
+      note: "",
+      submitting: false,
+    });
+  };
+
+  const closeNotePopup = () => {
+    setNotePopup({
+      open: false,
+      appointmentId: null,
+      status: "",
+      note: "",
+      submitting: false,
+    });
+  };
+
+  const submitStatusUpdate = async () => {
+    if (!notePopup.appointmentId || !notePopup.status || notePopup.submitting) return;
+
+    setNotePopup((prev) => ({ ...prev, submitting: true }));
+    await updateStatus(notePopup.appointmentId, notePopup.status, notePopup.note.trim());
+    closeNotePopup();
+  };
+
   const handleLogout = () => {
+    previousAppointmentsRef.current = [];
     localStorage.removeItem("doctor");
     navigate("/");
   };
@@ -254,7 +341,18 @@ function DoctorDashboard() {
             <h3>Appointments</h3>
           </div>
 
-          {message ? <div className="doctor-alert">{message}</div> : null}
+          {cancellationMessage && (
+            <div className="cancellation-notification">
+              <div className="cancellation-message">{cancellationMessage}</div>
+              <button
+                type="button"
+                className="cancellation-ok-btn"
+                onClick={() => setCancellationMessage("")}
+              >
+                OK
+              </button>
+            </div>
+          )}
 
           <div className="appointments-section-head">Pending Requests (All dates)</div>
           {pendingAppointments.length === 0 ? (
@@ -275,13 +373,13 @@ function DoctorDashboard() {
                   <div className="actions">
                     <button
                       className="approve"
-                      onClick={() => updateStatus(item.id, "approved")}
+                      onClick={() => openNotePopup(item.id, "approved")}
                     >
                       Approve
                     </button>
                     <button
                       className="reject"
-                      onClick={() => updateStatus(item.id, "rejected")}
+                      onClick={() => openNotePopup(item.id, "rejected")}
                     >
                       Reject
                     </button>
@@ -326,6 +424,83 @@ function DoctorDashboard() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      ) : null}
+
+      {statusPopup.open ? (
+        <div
+          className="status-popup-overlay"
+          onClick={() => setStatusPopup({ open: false, title: "", message: "", isError: false })}
+        >
+          <div className="status-popup" onClick={(event) => event.stopPropagation()}>
+            <div className="status-popup-head">
+              <h4>{statusPopup.title}</h4>
+              <button
+                type="button"
+                className="status-popup-close"
+                onClick={() => setStatusPopup({ open: false, title: "", message: "", isError: false })}
+              >
+                ×
+              </button>
+            </div>
+            <div className={`status-popup-message ${statusPopup.isError ? "error" : "success"}`}>
+              {statusPopup.message}
+            </div>
+            <button
+              type="button"
+              className="status-popup-ok"
+              onClick={() => setStatusPopup({ open: false, title: "", message: "", isError: false })}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {notePopup.open ? (
+        <div className="status-popup-overlay" onClick={closeNotePopup}>
+          <div className="status-popup" onClick={(event) => event.stopPropagation()}>
+            <div className="status-popup-head">
+              <h4>
+                {notePopup.status === "approved" ? "Accept appointment" : "Reject appointment"}
+              </h4>
+              <button type="button" className="status-popup-close" onClick={closeNotePopup}>
+                ×
+              </button>
+            </div>
+
+            <div className="status-note-field">
+              <label htmlFor="doctor-note">Note for user (optional)</label>
+              <textarea
+                id="doctor-note"
+                value={notePopup.note}
+                onChange={(event) =>
+                  setNotePopup((prev) => ({ ...prev, note: event.target.value }))
+                }
+                placeholder="Add a short note..."
+                rows={4}
+              />
+            </div>
+
+            <div className="status-popup-actions">
+              <button
+                type="button"
+                className="status-popup-cancel"
+                onClick={closeNotePopup}
+                disabled={notePopup.submitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="status-popup-ok"
+                onClick={submitStatusUpdate}
+                disabled={notePopup.submitting}
+              >
+                {notePopup.submitting ? "Saving..." : "Confirm"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

@@ -174,6 +174,12 @@ function BookAppointment() {
       return;
     }
 
+    const selectedDateObj = new Date(`${appointmentDate}T00:00:00`);
+    if (selectedDateObj.getDay() === 0) {
+      setError("Bookings are not available on Sundays.");
+      return;
+    }
+
     const selectedTimeInMinutes = parseTimeToMinutes(appointmentTime);
     const clinicOpenInMinutes = parseTimeToMinutes(CLINIC_OPEN_TIME);
     const clinicCloseInMinutes = parseTimeToMinutes(CLINIC_CLOSE_TIME);

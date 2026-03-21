@@ -13,6 +13,7 @@ function App() {
 
   const showNav = admin && location.pathname !== "/";
   const isUsersRoute = location.pathname === "/dashboard" || location.pathname.startsWith("/users/");
+  const isDoctorsRoute = location.pathname === "/doctors" || location.pathname.startsWith("/doctors/");
 
   return (
     <div className="admin-shell">
@@ -33,6 +34,12 @@ function App() {
                 to="/dashboard"
               >
                 Users
+              </Link>
+              <Link
+                className={`nav-link ${isDoctorsRoute ? "active" : ""}`}
+                to="/doctors"
+              >
+                Doctors
               </Link>
             </nav>
 

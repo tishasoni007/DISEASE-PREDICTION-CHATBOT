@@ -77,6 +77,39 @@ router.get("/users", (req, res) => {
 });
 
 /* =====================================
+   GET ALL DOCTORS + APPOINTMENT COUNT
+===================================== */
+router.get("/doctors", (req, res) => {
+  const query = `
+    SELECT
+      d.id,
+      d.name,
+      d.hospital,
+      d.specialization,
+      d.contact,
+      d.region,
+      d.created_at,
+      da.email,
+      COUNT(a.id) AS total_appointments,
+      MAX(a.created_at) AS last_activity
+    FROM doctors d
+    LEFT JOIN doctor_accounts da ON da.doctor_id = d.id
+    LEFT JOIN appointments a ON a.doctor_id = d.id
+    GROUP BY d.id
+    ORDER BY last_activity DESC, d.created_at DESC
+  `;
+
+  db.query(query, (err, doctors) => {
+    if (err) {
+      console.error("Admin doctor list error:", err);
+      return res.json({ success: false, message: "DB error" });
+    }
+
+    res.json({ success: true, doctors });
+  });
+});
+
+/* =====================================
    GET SINGLE USER DETAILS
 ===================================== */
 router.get("/users/:email", (req, res) => {
@@ -93,6 +126,73 @@ router.get("/users/:email", (req, res) => {
       }
 
       res.json({ success: true, user: results[0] });
+    }
+  );
+});
+
+/* =====================================
+   GET SINGLE DOCTOR DETAILS
+===================================== */
+router.get("/doctors/:id", (req, res) => {
+  db.query(
+    `
+    SELECT
+      d.id,
+      d.name,
+      d.hospital,
+      d.specialization,
+      d.contact,
+      d.region,
+      d.created_at,
+      da.email
+    FROM doctors d
+    LEFT JOIN doctor_accounts da ON da.doctor_id = d.id
+    WHERE d.id = ?
+    LIMIT 1
+    `,
+    [req.params.id],
+    (err, results) => {
+      if (err) {
+        return res.json({ success: false, message: "DB error" });
+      }
+
+      if (results.length === 0) {
+        return res.json({ success: false, message: "Doctor not found" });
+      }
+
+      res.json({ success: true, doctor: results[0] });
+    }
+  );
+});
+
+/* =====================================
+   GET DOCTOR APPOINTMENTS
+===================================== */
+router.get("/doctors/:id/appointments", (req, res) => {
+  db.query(
+    `
+    SELECT
+      a.id,
+      a.user_email,
+      a.appointment_date,
+      a.appointment_time,
+      a.status,
+      a.symptoms,
+      a.doctor_note,
+      a.created_at,
+      u.name AS user_name
+    FROM appointments a
+    LEFT JOIN users u ON u.email = a.user_email
+    WHERE a.doctor_id = ?
+    ORDER BY a.appointment_date DESC, a.appointment_time DESC
+    `,
+    [req.params.id],
+    (err, appointments) => {
+      if (err) {
+        return res.json({ success: false, message: "DB error" });
+      }
+
+      res.json({ success: true, appointments });
     }
   );
 });

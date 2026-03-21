@@ -5,6 +5,8 @@ import App from "./App";
 import AdminLogin from "./AdminLogin";
 import AdminDashboard from "./AdminDashboard";
 import UserDetail from "./UserDetail";
+import DoctorDashboard from "./DoctorDashboard";
+import DoctorDetail from "./DoctorDetail";
 import "./admin.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
@@ -18,6 +20,8 @@ root.render(
         <Route index element={<AdminLogin />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="users/:email" element={<UserDetail />} />
+        <Route path="doctors" element={<DoctorDashboard />} />
+        <Route path="doctors/:id" element={<DoctorDetail />} />
       </Route>
     </Routes>
   </BrowserRouter>

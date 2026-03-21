@@ -61,6 +61,13 @@ router.post("/request", (req, res) => {
     });
   }
 
+  if (selectedDate.getDay() === 0) {
+    return res.json({
+      success: false,
+      message: "Bookings are not available on Sundays.",
+    });
+  }
+
   const selectedTimeInMinutes = parseTimeToMinutes(appointmentTime);
   if (selectedTimeInMinutes === null) {
     return res.json({ success: false, message: "Invalid appointment time" });
